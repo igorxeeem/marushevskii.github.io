@@ -2,16 +2,16 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Snake WebApp Swipe</title>
+<title>Snake WebApp Fullscreen</title>
 <style>
-body { margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#222; font-family:Arial; }
-#game-container { position:relative; width:600px; height:640px; }
-canvas { display:block; background:#ccc; }
-#score-display { color:white; font-size:20px; text-align:center; margin-bottom:5px; }
+body { margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#222; font-family:Arial, sans-serif; }
+#game-container { position:relative; width:100%; height:100%; max-width:100%; max-height:100%; }
+canvas { display:block; background:#ccc; width:100%; height:100%; }
+#score-display { color:white; font-size:20px; text-align:center; margin-bottom:5px; position:absolute; top:10px; width:100%; text-align:center; z-index:5; }
 #menu {
-  position:absolute; width:600px; height:600px; top:0; left:0;
+  position:absolute; width:100%; height:100%;
   background: rgba(0,0,0,0.8); display:flex; flex-direction:column;
-  justify-content:center; align-items:center; gap:15px; border:2px solid #333; z-index:10;
+  justify-content:center; align-items:center; gap:15px; z-index:10;
 }
 button { padding:12px 25px; font-size:20px; cursor:pointer; border-radius:8px; border:none; background:#28a745; color:white; transition:0.2s; }
 button:hover { background:#1e7e34; }
@@ -22,7 +22,7 @@ h1 { color:white; margin:0; }
 
 <div id="game-container">
   <div id="score-display">Размер: 0 см</div>
-  <canvas id="game" width="600" height="600"></canvas>
+  <canvas id="game"></canvas>
   <div id="menu">
     <h1 id="menu-title">Snake</h1>
     <button id="startBtn">Начать игру</button>
@@ -30,6 +30,13 @@ h1 { color:white; margin:0; }
 </div>
 
 <script>
+// ---------- Telegram Fullscreen ----------
+if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.requestFullscreen(); // сразу fullscreen
+}
+
+// ---------- Игровые переменные ----------
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const menu = document.getElementById("menu");
@@ -38,19 +45,28 @@ const scoreDisplay = document.getElementById("score-display");
 const menuTitle = document.getElementById("menu-title");
 
 const box = 30; 
-const FIELD = 600;
+let FIELD_WIDTH, FIELD_HEIGHT;
 
 let snake, dx, dy, food, score, gameRunning;
 
-// ---------- КАРТИНКИ ---------- //
+// ---------- Картинки ----------
 const headImg = new Image(); headImg.src = "head.png";
 const bodyImg = new Image(); bodyImg.src = "body.png";
 const tailImg = new Image(); tailImg.src = "tail.png";
 const foodImg = new Image(); foodImg.src = "food.png";
 
-// ---------- ФУНКЦИИ ---------- //
+// ---------- Функции ----------
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    FIELD_WIDTH = canvas.width - (canvas.width % box);
+    FIELD_HEIGHT = canvas.height - (canvas.height % box);
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
 function resetGame() {
-  snake = [{ x: 300, y: 300 }];
+  snake = [{ x: Math.floor(FIELD_WIDTH/2/box)*box, y: Math.floor(FIELD_HEIGHT/2/box)*box }];
   dx = box; dy = 0;
   score = 0;
   scoreDisplay.textContent = `Размер: ${score} см`;
@@ -62,14 +78,14 @@ function spawnFood() {
   let safe = false;
   let x, y;
   while(!safe){
-    x = Math.floor(Math.random() * (FIELD/box)) * box;
-    y = Math.floor(Math.random() * (FIELD/box)) * box;
+    x = Math.floor(Math.random() * (FIELD_WIDTH/box)) * box;
+    y = Math.floor(Math.random() * (FIELD_HEIGHT/box)) * box;
     safe = !snake.some(seg => seg.x===x && seg.y===y);
   }
   food = { x, y };
 }
 
-function wrap(v){ return ((v % FIELD) + FIELD) % FIELD; }
+function wrap(v, max){ return ((v % max) + max) % max; }
 
 function selfCollision(head){
   for(let i=1;i<snake.length;i++)
@@ -85,11 +101,11 @@ function drawRotatedImage(img, x, y, width, height, angle){
   ctx.restore();
 }
 
-// ---------- ИГРОВОЙ ЦИКЛ ---------- //
+// ---------- Игровой цикл ----------
 function gameLoop(){
   if(!gameRunning) return;
 
-  let head = { x: wrap(snake[0].x+dx), y: wrap(snake[0].y+dy) };
+  let head = { x: wrap(snake[0].x+dx, FIELD_WIDTH), y: wrap(snake[0].y+dy, FIELD_HEIGHT) };
   if(selfCollision(head)){ gameOver(); return; }
 
   snake.unshift(head);
@@ -99,9 +115,9 @@ function gameLoop(){
     spawnFood();
   } else snake.pop();
 
-  ctx.clearRect(0,0,FIELD,FIELD);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle="#ccc";
-  ctx.fillRect(0,0,FIELD,FIELD);
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
   if(foodImg.complete) ctx.drawImage(foodImg, food.x, food.y, box, box);
 
@@ -132,7 +148,7 @@ function gameLoop(){
   setTimeout(gameLoop,120);
 }
 
-// ---------- GAME OVER ---------- //
+// ---------- Game Over ----------
 function gameOver(){
   gameRunning=false;
   canvas.style.display="none";
@@ -141,7 +157,7 @@ function gameOver(){
   startBtn.textContent="Играть снова";
 }
 
-// ---------- СТАРТ ---------- //
+// ---------- Start Game ----------
 function startGame(){
   resetGame();
   menu.style.display="none";
@@ -152,7 +168,7 @@ function startGame(){
 
 startBtn.addEventListener("click", startGame);
 
-// ---------- УПРАВЛЕНИЕ ---------- //
+// ---------- Управление ----------
 document.addEventListener("keydown", e=>{
   if(!gameRunning) return;
   if(e.key==="ArrowUp" && dy===0){dx=0; dy=-box;}
@@ -161,7 +177,7 @@ document.addEventListener("keydown", e=>{
   if(e.key==="ArrowRight" && dx===0){dx=box; dy=0;}
 });
 
-// ---------- СВАЙПЫ ДЛЯ МОБИЛЬНЫХ ---------- //
+// ---------- Свайпы для мобильных ----------
 let touchStartX = 0, touchStartY = 0;
 
 canvas.addEventListener('touchstart', function(e){
@@ -184,16 +200,6 @@ canvas.addEventListener('touchend', function(e){
   }
 }, false);
 
-// ---------- TELEGRAM WEB APP FULLSCREEN ---------- //
-if (window.Telegram?.WebApp) {
-    const tg = window.Telegram.WebApp;
-
-    // Разворачиваем WebApp в fullscreen
-    tg.expand();
-
-    // Можно скрыть скролл, чтобы свайпы не прокручивали страницу
-    document.body.style.overflow = 'hidden';
-}
 </script>
 </body>
 </html>
