@@ -184,6 +184,16 @@ canvas.addEventListener('touchend', function(e){
   }
 }, false);
 
+// ---------- TELEGRAM WEB APP FULLSCREEN ---------- //
+if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+
+    // Разворачиваем WebApp в fullscreen
+    tg.expand();
+
+    // Можно скрыть скролл, чтобы свайпы не прокручивали страницу
+    document.body.style.overflow = 'hidden';
+}
 </script>
 </body>
 </html>
