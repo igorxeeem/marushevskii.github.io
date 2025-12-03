@@ -1,11 +1,55 @@
-<script>
-// ---------- TELEGRAM FULLSCREEN ----------
-if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.ready();             // уведомляем Telegram, что WebApp готов
-    Telegram.WebApp.requestFullscreen(); // сразу fullscreen
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Snake WebApp Swipe</title>
+<style>
+body { margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#222; font-family:Arial; }
+#game-container { position:relative; width:600px; height:640px; }
+canvas { display:block; background:#ccc; }
+#score-display { color:white; font-size:20px; text-align:center; margin-bottom:5px; }
+#menu {
+  position:absolute; width:600px; height:600px; top:0; left:0;
+  background: rgba(0,0,0,0.8); display:flex; flex-direction:column;
+  justify-content:center; align-items:center; gap:15px; border:2px solid #333; z-index:10;
 }
+button { padding:12px 25px; font-size:20px; cursor:pointer; border-radius:8px; border:none; background:#28a745; color:white; transition:0.2s; }
+button:hover { background:#1e7e34; }
+h1 { color:white; margin:0; }
+#fullscreen-container { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:20; }
+</style>
+</head>
+<body>
 
-// ---------- Игровой код остаётся как у тебя ----------
+<div id="fullscreen-container">
+  <button id="fullscreenBtn">Включить Fullscreen</button>
+</div>
+
+<div id="game-container">
+  <div id="score-display">Размер: 0 см</div>
+  <canvas id="game" width="600" height="600"></canvas>
+  <div id="menu">
+    <h1 id="menu-title">Snake</h1>
+    <button id="startBtn">Начать игру</button>
+  </div>
+</div>
+
+<script>
+// ---------- FULLSCREEN КНОПКА ----------
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+fullscreenBtn.addEventListener("click", () => {
+    if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.requestFullscreen();
+        console.log("Попытка включить fullscreen через Telegram WebApp");
+    } else if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+        console.log("Попытка включить fullscreen через браузер");
+    }
+    fullscreenBtn.style.display = "none"; // убираем кнопку после нажатия
+});
+
+// ---------- Игровой код ----------
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const menu = document.getElementById("menu");
@@ -160,3 +204,5 @@ canvas.addEventListener('touchend', function(e){
   }
 }, false);
 </script>
+</body>
+</html>
