@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Snake WebApp Swipe</title>
+<style>
+body { margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#222; font-family:Arial; }
+#game-container { position:relative; width:600px; height:640px; }
+canvas { display:block; background:#ccc; }
+#score-display { color:white; font-size:20px; text-align:center; margin-bottom:5px; }
+#menu {
+  position:absolute; width:600px; height:600px; top:0; left:0;
+  background: rgba(0,0,0,0.8); display:flex; flex-direction:column;
+  justify-content:center; align-items:center; gap:15px; border:2px solid #333; z-index:10;
+}
+button { padding:12px 25px; font-size:20px; cursor:pointer; border-radius:8px; border:none; background:#28a745; color:white; transition:0.2s; }
+button:hover { background:#1e7e34; }
+h1 { color:white; margin:0; }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="score-display">Размер: 0 см</div>
+  <canvas id="game" width="600" height="600"></canvas>
+  <div id="menu">
+    <h1 id="menu-title">Snake</h1>
+    <button id="startBtn">Начать игру</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const menu = document.getElementById("menu");
+const startBtn = document.getElementById("startBtn");
+const scoreDisplay = document.getElementById("score-display");
+const menuTitle = document.getElementById("menu-title");
+
+const box = 30; 
+const FIELD = 600;
+
+let snake, dx, dy, food, score, gameRunning;
+
+// ---------- КАРТИНКИ ---------- //
+const headImg = new Image(); headImg.src = "head.png";
+const bodyImg = new Image(); bodyImg.src = "body.png";
+const tailImg = new Image(); tailImg.src = "tail.png";
+const foodImg = new Image(); foodImg.src = "food.png";
+
+// ---------- ФУНКЦИИ ---------- //
+function resetGame() {
+  snake = [{ x: 300, y: 300 }];
+  dx = box; dy = 0;
+  score = 0;
+  scoreDisplay.textContent = `Размер: ${score} см`;
+  menuTitle.textContent = "Snake";
+  spawnFood();
+}
+
+function spawnFood() {
+  let safe = false;
+  let x, y;
+  while(!safe){
+    x = Math.floor(Math.random() * (FIELD/box)) * box;
+    y = Math.floor(Math.random() * (FIELD/box)) * box;
+    safe = !snake.some(seg => seg.x===x && seg.y===y);
+  }
+  food = { x, y };
+}
+
+function wrap(v){ return ((v % FIELD) + FIELD) % FIELD; }
+
+function selfCollision(head){
+  for(let i=1;i<snake.length;i++)
+    if(snake[i].x===head.x && snake[i].y===head.y) return true;
+  return false;
+}
+
+function drawRotatedImage(img, x, y, width, height, angle){
+  ctx.save();
+  ctx.translate(x + width/2, y + height/2);
+  ctx.rotate(angle);
+  ctx.drawImage(img, -width/2, -height/2, width, height);
+  ctx.restore();
+}
+
+// ---------- ИГРОВОЙ ЦИКЛ ---------- //
+function gameLoop(){
+  if(!gameRunning) return;
+
+  let head = { x: wrap(snake[0].x+dx), y: wrap(snake[0].y+dy) };
+  if(selfCollision(head)){ gameOver(); return; }
+
+  snake.unshift(head);
+
+  if(head.x===food.x && head.y===food.y){
+    score++; scoreDisplay.textContent=`Размер: ${score} см`;
+    spawnFood();
+  } else snake.pop();
+
+  ctx.clearRect(0,0,FIELD,FIELD);
+  ctx.fillStyle="#ccc";
+  ctx.fillRect(0,0,FIELD,FIELD);
+
+  if(foodImg.complete) ctx.drawImage(foodImg, food.x, food.y, box, box);
+
+  for(let i=1;i<snake.length-1;i++){
+    const prev = snake[i-1];
+    const curr = snake[i];
+    const next = snake[i+1];
+    const angle = Math.atan2(next.y - prev.y, next.x - prev.x);
+    if(bodyImg.complete) drawRotatedImage(bodyImg, curr.x, curr.y, box, box, angle);
+  }
+
+  if(snake.length > 1 && tailImg.complete){
+    const tail = snake[snake.length-1];
+    const beforeTail = snake[snake.length-2];
+    const angle = Math.atan2(tail.y - beforeTail.y, tail.x - beforeTail.x);
+    drawRotatedImage(tailImg, tail.x, tail.y, box, box, angle);
+  }
+
+  if(headImg.complete){
+    let angle = 0;
+    if(dx===box && dy===0) angle=0;
+    else if(dx===-box && dy===0) angle=Math.PI;
+    else if(dx===0 && dy===-box) angle=-Math.PI/2;
+    else if(dx===0 && dy===box) angle=Math.PI/2;
+    drawRotatedImage(headImg, head.x, head.y, box, box, angle);
+  }
+
+  setTimeout(gameLoop,120);
+}
+
+// ---------- GAME OVER ---------- //
+function gameOver(){
+  gameRunning=false;
+  canvas.style.display="none";
+  menu.style.display="flex";
+  menuTitle.textContent = "САМООТСОС";
+  startBtn.textContent="Играть снова";
+}
+
+// ---------- СТАРТ ---------- //
+function startGame(){
+  resetGame();
+  menu.style.display="none";
+  canvas.style.display="block";
+  gameRunning=true;
+  gameLoop();
+}
+
+startBtn.addEventListener("click", startGame);
+
+// ---------- УПРАВЛЕНИЕ ---------- //
+document.addEventListener("keydown", e=>{
+  if(!gameRunning) return;
+  if(e.key==="ArrowUp" && dy===0){dx=0; dy=-box;}
+  if(e.key==="ArrowDown" && dy===0){dx=0; dy=box;}
+  if(e.key==="ArrowLeft" && dx===0){dx=-box; dy=0;}
+  if(e.key==="ArrowRight" && dx===0){dx=box; dy=0;}
+});
+
+// ---------- СВАЙПЫ ДЛЯ МОБИЛЬНЫХ ---------- //
+let touchStartX = 0, touchStartY = 0;
+
+canvas.addEventListener('touchstart', function(e){
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+}, false);
+
+canvas.addEventListener('touchend', function(e){
+  const touch = e.changedTouches[0];
+  const dxSwipe = touch.clientX - touchStartX;
+  const dySwipe = touch.clientY - touchStartY;
+
+  if(Math.abs(dxSwipe) > Math.abs(dySwipe)){
+    if(dxSwipe > 0 && dx===0){dx=box; dy=0;}
+    if(dxSwipe < 0 && dx===0){dx=-box; dy=0;}
+  } else {
+    if(dySwipe > 0 && dy===0){dx=0; dy=box;}
+    if(dySwipe < 0 && dy===0){dx=0; dy=-box;}
+  }
+}, false);
+
+</script>
+</body>
+</html>
