@@ -5,11 +5,11 @@
 <title>Snake WebApp Fullscreen</title>
 <style>
 body { margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#222; font-family:Arial, sans-serif; }
-#game-container { position:relative; width:100%; height:100%; max-width:100%; max-height:100%; }
-canvas { display:block; background:#ccc; width:100%; height:100%; }
+#game-container { position:relative; width:600px; height:640px; }
+canvas { display:block; background:#ccc; width:600px; height:600px; }
 #score-display { color:white; font-size:20px; text-align:center; margin-bottom:5px; position:absolute; top:10px; width:100%; text-align:center; z-index:5; }
 #menu {
-  position:absolute; width:100%; height:100%;
+  position:absolute; width:600px; height:600px;
   background: rgba(0,0,0,0.8); display:flex; flex-direction:column;
   justify-content:center; align-items:center; gap:15px; z-index:10;
 }
@@ -22,7 +22,7 @@ h1 { color:white; margin:0; }
 
 <div id="game-container">
   <div id="score-display">Размер: 0 см</div>
-  <canvas id="game"></canvas>
+  <canvas id="game" width="600" height="600"></canvas>
   <div id="menu">
     <h1 id="menu-title">Snake</h1>
     <button id="startBtn">Начать игру</button>
@@ -45,7 +45,7 @@ const scoreDisplay = document.getElementById("score-display");
 const menuTitle = document.getElementById("menu-title");
 
 const box = 30; 
-let FIELD_WIDTH, FIELD_HEIGHT;
+const FIELD = 600;
 
 let snake, dx, dy, food, score, gameRunning;
 
@@ -56,17 +56,8 @@ const tailImg = new Image(); tailImg.src = "tail.png";
 const foodImg = new Image(); foodImg.src = "food.png";
 
 // ---------- Функции ----------
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    FIELD_WIDTH = canvas.width - (canvas.width % box);
-    FIELD_HEIGHT = canvas.height - (canvas.height % box);
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
 function resetGame() {
-  snake = [{ x: Math.floor(FIELD_WIDTH/2/box)*box, y: Math.floor(FIELD_HEIGHT/2/box)*box }];
+  snake = [{ x: 300, y: 300 }];
   dx = box; dy = 0;
   score = 0;
   scoreDisplay.textContent = `Размер: ${score} см`;
@@ -78,14 +69,14 @@ function spawnFood() {
   let safe = false;
   let x, y;
   while(!safe){
-    x = Math.floor(Math.random() * (FIELD_WIDTH/box)) * box;
-    y = Math.floor(Math.random() * (FIELD_HEIGHT/box)) * box;
+    x = Math.floor(Math.random() * (FIELD/box)) * box;
+    y = Math.floor(Math.random() * (FIELD/box)) * box;
     safe = !snake.some(seg => seg.x===x && seg.y===y);
   }
   food = { x, y };
 }
 
-function wrap(v, max){ return ((v % max) + max) % max; }
+function wrap(v){ return ((v % FIELD) + FIELD) % FIELD; }
 
 function selfCollision(head){
   for(let i=1;i<snake.length;i++)
@@ -105,7 +96,7 @@ function drawRotatedImage(img, x, y, width, height, angle){
 function gameLoop(){
   if(!gameRunning) return;
 
-  let head = { x: wrap(snake[0].x+dx, FIELD_WIDTH), y: wrap(snake[0].y+dy, FIELD_HEIGHT) };
+  let head = { x: wrap(snake[0].x+dx), y: wrap(snake[0].y+dy) };
   if(selfCollision(head)){ gameOver(); return; }
 
   snake.unshift(head);
@@ -115,9 +106,9 @@ function gameLoop(){
     spawnFood();
   } else snake.pop();
 
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0,0,FIELD,FIELD);
   ctx.fillStyle="#ccc";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0,0,FIELD,FIELD);
 
   if(foodImg.complete) ctx.drawImage(foodImg, food.x, food.y, box, box);
 
