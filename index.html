@@ -40,13 +40,24 @@ const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 fullscreenBtn.addEventListener("click", () => {
     if (window.Telegram && Telegram.WebApp) {
+        // Запрашиваем fullscreen
         Telegram.WebApp.requestFullscreen();
         console.log("Попытка включить fullscreen через Telegram WebApp");
-    } else if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-        console.log("Попытка включить fullscreen через браузер");
+
+        // Ждём подтверждения, что fullscreen реально включен
+        Telegram.WebApp.onEvent("fullscreenChanged", function() {
+            if (Telegram.WebApp.isFullscreen) {
+                fullscreenBtn.style.display = "none";
+                startGame(); // запускаем игру после успешного fullscreen
+            }
+        });
+
+    } else {
+        // fallback для браузера (не нужен, можно удалить)
+        console.log("Telegram WebApp не найден, fullscreen не активируется");
+        fullscreenBtn.style.display = "none";
+        startGame();
     }
-    fullscreenBtn.style.display = "none"; // убираем кнопку после нажатия
 });
 
 // ---------- Игровой код ----------
